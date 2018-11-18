@@ -1,6 +1,6 @@
 # mqtt_forwarder
 
-Some sensors I'm using at home runs on ESP8266. I've been trying for a long time to sync them to NTP and so to provide the timstamp of each readings. I've failed so I chose a safer route and created this program that forward the payload add the timestamp. In my case each ESP8266 sends a message to a topic with its Chip Id to keep the same code base for all ESPs.
+Some sensors I'm using at home are running on ESP8266. I've been trying for a long time to sync them to NTP and so to provide the timstamp of each readings. I've failed (in fact it works for some weeks and start failing afterwards, in the long run : not working) so I chose a safer route and created this program that forward the payload add the timestamp. In my case each ESP8266 sends a message to a topic with its Chip Id to keep the same code base for all ESPs.
 
 # Usage
 
