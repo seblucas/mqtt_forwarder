@@ -6,5 +6,5 @@ COPY *.py /usr/bin/
 
 RUN chmod +x /usr/bin/mqtt_forwarder.py
 
-ENTRYPOINT ["python3", "-u", "mqtt_forwarder.py"]
+ENTRYPOINT ["python3", "-u", "/usr/bin/mqtt_forwarder.py"]
 CMD ["--help"]
