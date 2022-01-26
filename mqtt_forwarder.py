@@ -72,7 +72,7 @@ parser = argparse.ArgumentParser(description='Send MQTT payload received from a 
 parser.add_argument('-m', '--mqtt-host', dest='host', action="store", default="127.0.0.1",
                    help='Specify the MQTT host to connect to.')
 parser.add_argument('-a', '--hash-map', dest='hashMap', action="store",
-                   help='Specify the MQTT host to connect to.',
+                   help='Specify the map of MQTT topics to forward.',
                    **environ_or_required('MQTT_FORWARDER_HASHMAP'))
 parser.add_argument('-n', '--dry-run', dest='dryRun', action="store_true", default=False,
                    help='No data will be sent to the MQTT broker.')

@@ -47,7 +47,7 @@ optional arguments:
                         Specify the MQTT host to connect to. (default:
                         127.0.0.1)
   -a HASHMAP, --hash-map HASHMAP
-                        Specify the MQTT host to connect to. (default: None)
+                        Specify the map of MQTT topics to forward.
   -n, --dry-run         No data will be sent to the MQTT broker. (default:
                         False)
   -d DESTINATION, --destination DESTINATION
