@@ -27,6 +27,16 @@ import urllib.parse
 
 verbose = False
 
+CONNECTION_RETURN_CODE = [
+    "connection successful",
+    "incorrect protocol version",
+    "invalid client identifier",
+    "server unavailable",
+    "bad username or password",
+    "not authorised",
+]
+
+
 def signal_handler(signal, frame):
   print('You pressed Ctrl+C!')
   client.disconnect()
@@ -42,7 +52,8 @@ def debug(msg):
     print (msg + "\n")
 
 def on_connect(client, userdata, flags, rc):
-    debug("Connected with result code "+str(rc))
+    debug("Connected with result: " + CONNECTION_RETURN_CODE[rc]
+          if rc < len(CONNECTION_RETURN_CODE) else rc)
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
