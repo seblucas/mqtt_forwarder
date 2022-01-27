@@ -46,6 +46,12 @@ optional arguments:
   -m HOST, --mqtt-host HOST
                         Specify the MQTT host to connect to. (default:
                         127.0.0.1)
+  -P PORT, --port PORT
+                        MQTT boroker port to connect to. (default: 1883)
+  -u USERNAME, --username USERNAME
+                        MQTT boroker login username
+  -p PASSWORD, --password PASSWORD
+                        MQTT boroker login password
   -a HASHMAP, --hash-map HASHMAP
                         Specify the map of MQTT topics to forward.
   -n, --dry-run         No data will be sent to the MQTT broker. (default:
@@ -54,9 +60,6 @@ optional arguments:
                         The destination MQTT topic base. (default: sensor/raw)
   -t TOPIC, --topic TOPIC
                         The listening MQTT topic. (default: sensor/esp/#)
-  -T TOPIC, --topic-error TOPIC
-                        The MQTT topic on which to publish the message (if it
-                        wasn't a success). (default: error/transformer)
   -v, --verbose         Enable debug messages. (default: False)
 ```
 

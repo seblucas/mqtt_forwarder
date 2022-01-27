@@ -97,8 +97,6 @@ parser.add_argument('-d', '--destination', dest='destination', action="store", d
                    help='The destination MQTT topic base.')
 parser.add_argument('-t', '--topic', dest='topic', action="store", default="sensor/esp/#",
                    help='The listening MQTT topic.')
-parser.add_argument('-T', '--topic-error', dest='topicError', action="store", default="error/transformer", metavar="TOPIC",
-                   help='The MQTT topic on which to publish the message (if it wasn\'t a success).')
 parser.add_argument('-v', '--verbose', dest='verbose', action="store_true", default=False,
                    help='Enable debug messages.')
 
