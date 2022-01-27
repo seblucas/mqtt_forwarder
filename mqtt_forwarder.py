@@ -21,8 +21,12 @@
 #
 
 
-import os, re, time, json, argparse, signal
-import paho.mqtt.client as mqtt # pip install paho-mqtt
+import os
+import time
+import json
+import argparse
+import signal
+import paho.mqtt.client as mqtt  # pip install paho-mqtt
 import urllib.parse
 
 verbose = False
@@ -38,18 +42,21 @@ CONNECTION_RETURN_CODE = [
 
 
 def signal_handler(signal, frame):
-  print('You pressed Ctrl+C!')
-  client.disconnect()
+    print('You pressed Ctrl+C!')
+    client.disconnect()
+
 
 def environ_or_required(key):
-  if os.environ.get(key):
-    return {'default': os.environ.get(key)}
-  else:
-    return {'required': True}
+    if os.environ.get(key):
+        return {'default': os.environ.get(key)}
+    else:
+        return {'required': True}
+
 
 def debug(msg):
-  if verbose:
-    print (msg + "\n")
+    if verbose:
+        print(msg + "\n")
+
 
 def on_connect(client, userdata, flags, rc):
     debug("Connected with result: " + CONNECTION_RETURN_CODE[rc]
@@ -59,46 +66,53 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     client.subscribe(args.topic)
 
+
 def on_message(client, userdata, msg):
-    sensorName = msg.topic.split('/') [-1]
-    if sensorName in hashMap.keys():
-        tstamp = int(time.time())
-        mqttPath = urllib.parse.urljoin(args.destination + '/', hashMap[sensorName])
-        debug("Received message from {0} with payload {1} to be published to {2}".format(msg.topic, str(msg.payload), mqttPath))
+    sensorName = msg.topic.split('/')[-1]
+    if msg.topic in hashMap.keys() or sensorName in hashMap.keys():
+        hashValue = hashMap[sensorName] if sensorName in hashMap.keys() \
+            else hashMap[msg.topic]
+        mqttPath = urllib.parse.urljoin(
+            args.destination + '/', hashValue) if args.destination else hashValue
+        debug("Received message from {0} with payload {1} to be published to {2}".format(
+            msg.topic, str(msg.payload), mqttPath))
         nodeData = msg.payload
-        newObject = json.loads(nodeData.decode('utf-8'))
-        newObject['time'] = tstamp
-        nodeData = json.dumps(newObject)
+        if args.addDate:
+            newObject = json.loads(nodeData.decode('utf-8'))
+            newObject['time'] = int(time.time())
+            nodeData = json.dumps(newObject)
         if not args.dryRun:
-          client.publish(mqttPath, nodeData)
+            client.publish(mqttPath, nodeData)
         else:
-          debug("Dry run")
+            debug("Dry run")
     else:
-        debug("Received message from {0} with payload {1}. Hash not found in hashMap".format(msg.topic, str(msg.payload)))
+        debug("Received message from {0} with payload {1}. Hash not found in hashMap".format(
+            msg.topic, str(msg.payload)))
 
 
-
-parser = argparse.ArgumentParser(description='Send MQTT payload received from a topic to firebase.', 
-  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description='Send MQTT payload received from a topic to firebase.',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-m', '--mqtt-host', dest='host', action="store", default="127.0.0.1",
-                   help='Specify the MQTT host to connect to.')
+                    help='Specify the MQTT host to connect to.')
 parser.add_argument('-u', '--username', dest='username', action="store", metavar="USERNAME",
-                   help='MQTT boroker login username')
+                    help='MQTT broker login username.')
 parser.add_argument('-p', '--password', dest='password', action="store", metavar="$ECRET",
-                   help='MQTT boroker login password')
+                    help='MQTT broker login password.')
 parser.add_argument('-P', '--port', dest='port', action="store", type=int, default=1883, metavar=1883,
-                   help='MQTT boroker port')
+                    help='MQTT boroker port')
+parser.add_argument('-t', '--topic', dest='topic', action="store", default="#",
+                    help='The listening MQTT topic.')
+parser.add_argument('-d', '--destination', dest='destination', action="store", default="",
+                    help='The destination MQTT topic base.')
 parser.add_argument('-a', '--hash-map', dest='hashMap', action="store",
-                   help='Specify the map of MQTT topics to forward.',
-                   **environ_or_required('MQTT_FORWARDER_HASHMAP'))
+                    help='Specify the map of MQTT topics to forward.',
+                    **environ_or_required('MQTT_FORWARDER_HASHMAP'))
+parser.add_argument('-D', '--add-date', dest='addDate', action="store_true", default=False,
+                    help='Interpret MQTT payload as JSON and add timestamp.')
 parser.add_argument('-n', '--dry-run', dest='dryRun', action="store_true", default=False,
-                   help='No data will be sent to the MQTT broker.')
-parser.add_argument('-d', '--destination', dest='destination', action="store", default="sensor/raw",
-                   help='The destination MQTT topic base.')
-parser.add_argument('-t', '--topic', dest='topic', action="store", default="sensor/esp/#",
-                   help='The listening MQTT topic.')
+                    help='No data will be sent to the MQTT broker.')
 parser.add_argument('-v', '--verbose', dest='verbose', action="store_true", default=False,
-                   help='Enable debug messages.')
+                    help='Enable debug messages.')
 
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -118,4 +132,3 @@ elif args.password is not None:
 client.connect(host=args.host, port=args.port, keepalive=60)
 
 client.loop_forever()
-
