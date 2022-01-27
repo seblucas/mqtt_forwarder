@@ -27,6 +27,16 @@ import urllib.parse
 
 verbose = False
 
+CONNECTION_RETURN_CODE = [
+    "connection successful",
+    "incorrect protocol version",
+    "invalid client identifier",
+    "server unavailable",
+    "bad username or password",
+    "not authorised",
+]
+
+
 def signal_handler(signal, frame):
   print('You pressed Ctrl+C!')
   client.disconnect()
@@ -42,7 +52,8 @@ def debug(msg):
     print (msg + "\n")
 
 def on_connect(client, userdata, flags, rc):
-    debug("Connected with result code "+str(rc))
+    debug("Connected with result: " + CONNECTION_RETURN_CODE[rc]
+          if rc < len(CONNECTION_RETURN_CODE) else rc)
 
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
@@ -71,8 +82,14 @@ parser = argparse.ArgumentParser(description='Send MQTT payload received from a 
   formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-m', '--mqtt-host', dest='host', action="store", default="127.0.0.1",
                    help='Specify the MQTT host to connect to.')
+parser.add_argument('-u', '--username', dest='username', action="store", metavar="USERNAME",
+                   help='MQTT boroker login username')
+parser.add_argument('-p', '--password', dest='password', action="store", metavar="$ECRET",
+                   help='MQTT boroker login password')
+parser.add_argument('-P', '--port', dest='port', action="store", type=int, default=1883, metavar=1883,
+                   help='MQTT boroker port')
 parser.add_argument('-a', '--hash-map', dest='hashMap', action="store",
-                   help='Specify the MQTT host to connect to.',
+                   help='Specify the map of MQTT topics to forward.',
                    **environ_or_required('MQTT_FORWARDER_HASHMAP'))
 parser.add_argument('-n', '--dry-run', dest='dryRun', action="store_true", default=False,
                    help='No data will be sent to the MQTT broker.')
@@ -80,8 +97,6 @@ parser.add_argument('-d', '--destination', dest='destination', action="store", d
                    help='The destination MQTT topic base.')
 parser.add_argument('-t', '--topic', dest='topic', action="store", default="sensor/esp/#",
                    help='The listening MQTT topic.')
-parser.add_argument('-T', '--topic-error', dest='topicError', action="store", default="error/transformer", metavar="TOPIC",
-                   help='The MQTT topic on which to publish the message (if it wasn\'t a success).')
 parser.add_argument('-v', '--verbose', dest='verbose', action="store_true", default=False,
                    help='Enable debug messages.')
 
@@ -96,7 +111,11 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect(args.host, 1883, 60)
+if args.username is not None:
+    client.username_pw_set(args.username, password=args.password)
+elif args.password is not None:
+    raise Exception('Login with password requires username.')
+client.connect(host=args.host, port=args.port, keepalive=60)
 
 client.loop_forever()
 
