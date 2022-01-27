@@ -82,6 +82,12 @@ parser = argparse.ArgumentParser(description='Send MQTT payload received from a 
   formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-m', '--mqtt-host', dest='host', action="store", default="127.0.0.1",
                    help='Specify the MQTT host to connect to.')
+parser.add_argument('-u', '--username', dest='username', action="store", metavar="USERNAME",
+                   help='MQTT boroker login username')
+parser.add_argument('-p', '--password', dest='password', action="store", metavar="$ECRET",
+                   help='MQTT boroker login password')
+parser.add_argument('-P', '--port', dest='port', action="store", type=int, default=1883, metavar=1883,
+                   help='MQTT boroker port')
 parser.add_argument('-a', '--hash-map', dest='hashMap', action="store",
                    help='Specify the map of MQTT topics to forward.',
                    **environ_or_required('MQTT_FORWARDER_HASHMAP'))
@@ -107,7 +113,11 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect(args.host, 1883, 60)
+if args.username is not None:
+    client.username_pw_set(args.username, password=args.password)
+elif args.password is not None:
+    raise Exception('Login with password requires username.')
+client.connect(host=args.host, port=args.port, keepalive=60)
 
 client.loop_forever()
 
