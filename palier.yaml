@@ -1,0 +1,50 @@
+esphome:
+  name: palier
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+ota:
+  password: ""
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: high
+  fast_connect: true
+
+i2c:
+  sda: D2
+  scl: D1
+
+sensor:
+  - platform: bme280
+    address: 0x76
+    temperature:
+      oversampling: 8x
+      id: bme280_temp
+      accuracy_decimals: 1
+    pressure:
+      id: bme280_pres
+      accuracy_decimals: 0
+    humidity:
+      id: bme280_hum
+      accuracy_decimals: 0
+      on_value:
+        then:
+        - mqtt.publish_json:
+            topic: sensor/esp/xxxx
+            retain: false
+            payload: |-
+              root["temp"] = round(id(bme280_temp).state*10) / 10;
+              root["hum"] = round(id(bme280_hum).state);
+              root["pres"] = round(id(bme280_pres).state);
+    update_interval: 15min
+
+mqtt:
+  broker: !secret mqtt_host
+  log_topic: null
+  discovery: false
