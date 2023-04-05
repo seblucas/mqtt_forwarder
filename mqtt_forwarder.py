@@ -60,21 +60,29 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, msg):
-    sensorName = msg.topic.split('/')[-1]
-    if msg.topic in hashMap.keys() or sensorName in hashMap.keys():
-        hashValue = hashMap[sensorName] if sensorName in hashMap.keys() \
-            else hashMap[msg.topic]
+    sensor_name = msg.topic.split('/')[-1]
+    if msg.topic in hash_map.keys() or sensor_name in hash_map.keys():
+        # determine target topic
+        hash_value = hash_map[sensor_name] if sensor_name in hash_map.keys() \
+            else hash_map[msg.topic]
+        target_path = hash_value.split(":")[0]
         mqttPath = urllib.parse.urljoin(
-            args.destination + '/', hashValue) if args.destination else hashValue
+            args.destination + '/', target_path) if args.destination else target_path
         debug("Received message from {0} with payload {1} to be published to {2}".format(
             msg.topic, str(msg.payload), mqttPath))
-        nodeData = msg.payload
+        # determine target value
+        node_data = msg.payload
+        if ":" in hash_value:
+            scaling = hash_value.split(":")[1]
+            factor = float(scaling.split(",")[0])
+            offset = float(scaling.split(",")[1]) if "," in scaling else 0
+            node_data = float(node_data) * factor + offset
         if args.addDate:
-            newObject = json.loads(nodeData.decode('utf-8'))
+            newObject = json.loads(node_data.decode('utf-8'))
             newObject['time'] = int(time.time())
-            nodeData = json.dumps(newObject)
+            node_data = json.dumps(newObject)
         if not args.dryRun:
-            client.publish(mqttPath, nodeData)
+            client.publish(mqttPath, node_data)
         else:
             debug("Dry run")
     else:
@@ -116,10 +124,10 @@ verbose = args.verbose
 if args.hashMap is None and args.hashMapFile is None:
     raise Exception('You must specify either a hash map or a hash map file.')
 if args.hashMap:
-    hashMap = json.loads(args.hashMap)
+    hash_map = json.loads(args.hashMap)
 else:
     with open(args.hashMapFile, "r") as hashmapfile:
-        hashMap = json.load(hashmapfile)
+        hash_map = json.load(hashmapfile)
 
 client = mqtt.Client()
 client.on_connect = on_connect
