@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
 #
-#  mqtt_forwarder.py
-#
 #  Copyright 2016 Sébastien Lucas <sebastien@slucas.fr>
+#  Copyright 2023 Roman Morawek
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
+#  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
 #
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-#
-
 
 import os
 import time
@@ -105,8 +97,9 @@ parser.add_argument('-t', '--topic', dest='topic', action="store", default="#",
 parser.add_argument('-d', '--destination', dest='destination', action="store", default="",
                     help='The destination MQTT topic base.')
 parser.add_argument('-a', '--hash-map', dest='hashMap', action="store",
-                    help='Specify the map of MQTT topics to forward.',
-                    **environ_or_required('MQTT_FORWARDER_HASHMAP'))
+                    help='Specify the map of MQTT topics to forward.')
+parser.add_argument('-c', '--hash-map-file', dest='hashMapFile', action="store",
+                    help='Specify the map file of MQTT topics to forward.')
 parser.add_argument('-D', '--add-date', dest='addDate', action="store_true", default=False,
                     help='Interpret MQTT payload as JSON and add timestamp.')
 parser.add_argument('-n', '--dry-run', dest='dryRun', action="store_true", default=False,
@@ -119,7 +112,14 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 args = parser.parse_args()
 verbose = args.verbose
-hashMap = json.loads(args.hashMap)
+
+if args.hashMap is None and args.hashMapFile is None:
+    raise Exception('You must specify either a hash map or a hash map file.')
+if args.hashMap:
+    hashMap = json.loads(args.hashMap)
+else:
+    with open(args.hashMapFile, "r") as hashmapfile:
+        hashMap = json.load(hashmapfile)
 
 client = mqtt.Client()
 client.on_connect = on_connect
