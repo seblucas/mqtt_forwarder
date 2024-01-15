@@ -65,22 +65,37 @@ def on_message(client, userdata, msg):
         # determine target topic
         hash_value = hash_map[sensor_name] if sensor_name in hash_map.keys() \
             else hash_map[msg.topic]
-        target_path = hash_value.split(":")[0]
+        # hash_value may contain json property elements, e.g. "rh->linx/req/input/Luftfeuchtigkeit"
+        hash_parts = hash_value.split('->')
+        json_property = hash_parts[0] if len(hash_parts) == 2 else None
+        hash_value = hash_parts[1] if json_property is not None else hash_value
+        # hash_value may contain scaling, e.g. "linx/req/energymeter/PV/Power:0.001"
+        hash_parts = hash_value.split(':')
+        scaling = hash_parts[1] if len(hash_parts) == 2 else None
+        target_path = hash_parts[0] if scaling is not None else hash_value
         mqttPath = urllib.parse.urljoin(
             args.destination + '/', target_path) if args.destination else target_path
-        debug("Received message from {0} with payload {1} to be published to {2}".format(
-            msg.topic, str(msg.payload), mqttPath))
+
         # determine target value
         node_data = msg.payload
-        if ":" in hash_value:
-            scaling = hash_value.split(":")[1]
+        # access json member?
+        if json_property is not None:
+            json_obj = json.loads(node_data.decode('utf-8'))
+            node_data = json_obj[json_property]
+        # perform scaling?
+        if scaling is not None:
             factor = float(scaling.split(",")[0])
             offset = float(scaling.split(",")[1]) if "," in scaling else 0
             node_data = float(node_data) * factor + offset
+        # perform object output including current timestamp?
         if args.addDate:
             newObject = json.loads(node_data.decode('utf-8'))
             newObject['time'] = int(time.time())
             node_data = json.dumps(newObject)
+
+        # publish result
+        debug("Received message from {0} with payload {1} to be published to {2} as {3}".format(
+            msg.topic, msg.payload, mqttPath, str(node_data)))
         if not args.dryRun:
             client.publish(mqttPath, node_data)
         else:
@@ -98,8 +113,8 @@ parser.add_argument('-u', '--username', dest='username', action="store", metavar
                     help='MQTT broker login username.')
 parser.add_argument('-p', '--password', dest='password', action="store", metavar="$ECRET",
                     help='MQTT broker login password.')
-parser.add_argument('-P', '--port', dest='port', action="store", type=int, default=1883, metavar=1883,
-                    help='MQTT boroker port')
+parser.add_argument('-P', '--port', dest='port', action="store", type=int,
+                    default=1883, metavar=1883, help='MQTT boroker port')
 parser.add_argument('-t', '--topic', dest='topic', action="store", default="#",
                     help='The listening MQTT topic.')
 parser.add_argument('-d', '--destination', dest='destination', action="store", default="",
