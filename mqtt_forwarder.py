@@ -144,7 +144,7 @@ else:
     with open(args.hashMapFile, "r") as hashmapfile:
         hash_map = json.load(hashmapfile)
 
-client = mqtt.Client()
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
 client.on_connect = on_connect
 client.on_message = on_message
 
